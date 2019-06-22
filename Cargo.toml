@@ -5,9 +5,13 @@ authors = ["Riton <ritonelion@outlook.com>"]
 edition = "2018"
 
 [dependencies]
+bootloader = "0.6.0"
 
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
+#####################################################
+#[profile.dev]
+#panic = "abort"
+#
+#[profile.release]
+#panic = "abort"
+#remove since the "panic-strategy": "abort" had set
+#####################################################

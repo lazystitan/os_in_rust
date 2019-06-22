@@ -1,0 +1,7 @@
+[build]
+target = "x86_64-blog_os.json"
+#简化cargo xbuild --target x86_64-blog_os.json为cargo xbuild
+
+[target.'cfg(target_os = "none")']
+runner = "bootimage runner"
+#cargo xrun 即可在qemu中运行二进制文件
