@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 use volatile::Volatile;
 
+//可用来打印至vga text buffer的全局实体
 //默认不能在静态变？常量中使用非静态函数，导入lazy_static允许这么做
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
@@ -14,10 +15,9 @@ lazy_static! {
     });
 }
 
-
-#[allow(dead_code)]//关闭rust对未被使用的代码存在的警告
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]//可以比较，复制，打印
-#[repr(u8)]//每个颜色都存储为u8
+#[allow(dead_code)] //关闭rust对未被使用的代码存在的警告
+#[derive(Debug, Clone, Copy, Eq, PartialEq)] //可以比较，复制，打印
+#[repr(u8)] //每个颜色都存储为u8
 pub enum Color {
     //颜色
     Black = 0,
@@ -39,22 +39,22 @@ pub enum Color {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(transparent)]//保证ColorCode和u8有一样的data layout（数据行为）
+#[repr(transparent)] //保证ColorCode和u8有一样的data layout（数据行为）
 struct ColorCode(u8);
 //完整的foreground和background的颜色
 
 impl ColorCode {
-    fn new(foreground : Color, background: Color) -> ColorCode {
+    fn new(foreground: Color, background: Color) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(C)]//rust中默认没有保证实际域的顺序和代码一样，因此启用c的结构体来保证
+#[repr(C)] //rust中默认没有保证实际域的顺序和代码一样，因此启用c的结构体来保证
 struct ScreenChar {
     //字符+颜色
     ascii_character: u8,
-    color_code: ColorCode
+    color_code: ColorCode,
 }
 
 //vag buffer的常数
@@ -65,14 +65,14 @@ const BUFFER_WIDTH: usize = 80;
 #[repr(transparent)]
 struct Buffer {
     //volatile易变的，具有side effect的
-    chars:[[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT]
+    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
 pub struct Writer {
     //写入buffer的结构体
     column_position: usize,
     color_code: ColorCode,
-    buffer: &'static mut Buffer
+    buffer: &'static mut Buffer,
 }
 
 impl Writer {
@@ -89,9 +89,10 @@ impl Writer {
 
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
-            b'\n' => self.new_line(),//换行
+            b'\n' => self.new_line(), //换行
             byte => {
-                if self.column_position >= BUFFER_WIDTH {//若此行已满，换行
+                if self.column_position >= BUFFER_WIDTH {
+                    //若此行已满，换行
                     self.new_line();
                 }
 
@@ -101,7 +102,7 @@ impl Writer {
                 let color_code = self.color_code;
                 self.buffer.chars[row][col].write(ScreenChar {
                     ascii_character: byte,
-                    color_code
+                    color_code,
                 });
                 self.column_position += 1;
             }
@@ -136,7 +137,6 @@ impl fmt::Write for Writer {
         Ok(())
     }
 }
-
 
 #[macro_export]
 macro_rules! print {
