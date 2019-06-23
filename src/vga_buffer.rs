@@ -1,5 +1,3 @@
-//extern crate lazy_static;
-
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
