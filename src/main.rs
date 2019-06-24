@@ -7,46 +7,11 @@
 #![no_main] //关闭Rust-Level的入口
 #![feature(asm)]
 #![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
+#![test_runner(blog_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-mod vga_buffer;
-mod serial;
-
 use core::panic::PanicInfo;
-
-#[test_case]
-fn trivial_assertion() {
-    serial_println!("trivail assertion");
-    assert_eq!(0,1);
-    serial_println!("[OK]");
-}
-
-fn test_runner(tests: &[&dyn Fn()]) {
-    serial_println!("Running {} tests",tests.len());
-    for test in tests {
-        test();
-    }
-
-    exit_qemu(QemuExitCode::Success);
-}
-
-#[cfg(not(test))]//当不是测试时使用
-#[panic_handler] //当Panic时调用，因为原本的panic是rust标准库的一部分
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
-}
-
-#[cfg(test)]//是测试时使用
-#[panic_handler] //当Panic时调用，因为原本的panic是rust标准库的一部分
-fn panic(info: &PanicInfo) -> ! {
-    serial_println!("[failed]\n");
-    serial_println!("Error: {}\n",info);
-    exit_qemu(QemuExitCode::Failed);
-    loop {}
-}
-
+use blog_os::println;
 
 
 #[no_mangle] //不允许更改函数名
@@ -61,18 +26,17 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(u32)]
-pub enum QemuExitCode {
-    Success = 0x10,
-    Failed = 0x11
+#[cfg(not(test))]//当不是测试时使用
+#[panic_handler] //当Panic时调用，因为原本的panic是rust标准库的一部分
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+    loop {}
 }
 
-pub fn exit_qemu(exit_code: QemuExitCode) {
-    use x86_64::instructions::port::Port;
-
-    unsafe {
-        let mut port = Port::new(0xf4);
-        port.write(exit_code as u32);
-    }
+#[cfg(test)]//是测试时使用
+#[panic_handler] //当Panic时调用，因为原本的panic是rust标准库的一部分
+fn panic(info: &PanicInfo) -> ! {
+    blog_os::test_panic_handler(info);
 }
+
+
